@@ -1,0 +1,37 @@
+Inventory Books 100
+Inventory Dice 200
+Inventory Figures 50
+Inventory Towers 100
+
+Purchase Craig Books 4
+Purchase Craig Dice 100
+
+Purchase Billy Dice 100
+
+Purchase Sue Dice 50
+Purchase Sue Books 10
+
+Inventory Dice 200
+Purchase Sue Dice 150
+Purchase Sue Figures 60
+Purchase Craig Dice 20
+Purchase Craig Books 8
+
+Purchase Billy Figures 10
+
+Purchase Johnny Figures 100
+
+
+Summarize
+Quit
+/** test3 Results should be: **/
+Sorry Sue, we only have 0 Dice
+Sorry Sue, we only have 50 Figures
+Sorry Johnny, we only have 40 Figures
+There are 78 Books 30 Dice 40 Figures and 100 Towers in inventory
+we have had a total of 3 different customers
+Craig has purchased the most Books (12)
+Sue has purchased the most Dice (150)
+Billy has purchased the most Figures (10)
+no one has purchased any Towers
+/********* end of test 3 *************/

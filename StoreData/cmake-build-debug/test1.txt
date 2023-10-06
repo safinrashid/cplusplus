@@ -1,0 +1,20 @@
+Inventory Books 100
+Inventory Dice 200
+Inventory Figures 50
+Inventory Towers 100
+
+Purchase Craig Books 4
+Purchase Craig Dice 20
+Purchase Craig Dice 100
+
+
+Summarize
+Quit
+/** test1 Results should be: **/
+There are 96 Books 80 Dice 50 Figures and 100 Towers in inventory
+we have had a total of 1 different customers
+Craig has purchased the most Books (4)
+Craig has purchased the most Dice (120)
+no one has purchased any Figures
+no one has purchased any Towers
+/********* end of test 1 *************/

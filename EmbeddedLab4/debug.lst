@@ -1,0 +1,986 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;****************** Debug.s ***************
+    2 00000000         ; Program written by: Safin, Alexa
+    3 00000000         ; Date Created: 2/14/2017
+    4 00000000         ; Last Modified: 1/10/2022
+    5 00000000         
+    6 00000000         ; You may assume your debug functions have exclusive acc
+                       ess to SysTick
+    7 00000000         ; However, please make your PortF initialization/access 
+                       friendly,
+    8 00000000         ; because you have exclusive access to only one of the P
+                       ortF pins.
+    9 00000000         
+   10 00000000         ; Your Debug_Init should initialize all your debug funct
+                       ionality
+   11 00000000         ; Everyone writes the same version of Debug_ElapsedTime
+   12 00000000         ; Everyone writes Debug_Beat, but the pin to toggle is r
+                       evealed in the UART window
+   13 00000000         ; There are four possible versions of Debug_Dump. 
+   14 00000000         ; Which version you implement is revealed in the UART wi
+                       ndow
+   15 00000000         
+   16 00000000         ;N=174
+   17 00000000         ;Option 1: Histogram of the number each value as occurre
+                       d
+   18 00000000         ;Implement Hearbeat on PF2
+   19 00000000         
+   20 00000000         
+   21 00000000         
+   22 00000000         ; ****************Option 1******************
+   23 00000000         ; Input: R0 7-bit strategic information 
+   24 00000000         ; Output: none
+   25 00000000         
+   26 00000000         ; If R0 bit 6 is low, 
+   27 00000000         ; - observe the value in bits 5-0 of R0 (value from 0 to
+                        63): 
+   28 00000000         ;     maintain a histogram recording the number of times
+                        each value as occurred
+   29 00000000         ;     since N will be less than 200, no histogram count 
+                       can exceed the 8-bit 255 maximum,  
+   30 00000000         
+   31 00000000         ; If R0 bit 6 is high,
+   32 00000000         ; - Do nothing
+   33 00000000         
+   34 00000000         
+   35 00000000 400FE608 
+                       SYSCTL_RCGCGPIO_R
+                               EQU              0x400FE608
+   36 00000000 400253FC 
+                       GPIO_PORTF_DATA_R
+                               EQU              0x400253FC
+   37 00000000 40025400 
+                       GPIO_PORTF_DIR_R
+                               EQU              0x40025400
+   38 00000000 4002551C 
+                       GPIO_PORTF_DEN_R
+                               EQU              0x4002551C
+   39 00000000 400FE604 
+                       SYSCTL_RCGCTIMER_R
+                               EQU              0x400FE604
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   40 00000000 40032000 
+                       TIMER2_CFG_R
+                               EQU              0x40032000
+   41 00000000 40032004 
+                       TIMER2_TAMR_R
+                               EQU              0x40032004
+   42 00000000 4003200C 
+                       TIMER2_CTL_R
+                               EQU              0x4003200C
+   43 00000000 40032018 
+                       TIMER2_IMR_R
+                               EQU              0x40032018
+   44 00000000 40032028 
+                       TIMER2_TAILR_R
+                               EQU              0x40032028
+   45 00000000 40032038 
+                       TIMER2_TAPR_R
+                               EQU              0x40032038
+   46 00000000 40032048 
+                       TIMER2_TAR_R
+                               EQU              0x40032048
+   47 00000000         
+   48 00000000         ; RAM Area
+   49 00000000                 AREA             DATA, ALIGN=2
+   50 00000000         ;place your debug variables in RAM here
+   51 00000000                 EXPORT           DumpBuf
+   52 00000000                 EXPORT           Histogram
+   53 00000000                 EXPORT           MinimumTime
+   54 00000000                 EXPORT           MaximumTime
+   55 00000000 00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00    DumpBuf SPACE            200         ; 200 8-bit I/O val
+                                                            ues, your N will be
+                                                             less than 200
+   56 000000C8 00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+              00 00 00 
+
+
+
+ARM Macro Assembler    Page 4 
+
+
+              00 00 00 
+              00       Histogram
+                               SPACE            64          ; count of the numb
+                                                            er of times each va
+                                                            lue has occured
+   57 00000108 00 00 00 
+              00       MinimumTime
+                               SPACE            4           ; smallest elapsed 
+                                                            time between called
+                                                             to Debug_ElapsedTi
+                                                            me
+   58 0000010C 00 00 00 
+              00       MaximumTime
+                               SPACE            4           ; largest elapsed t
+                                                            ime between called 
+                                                            to Debug_ElapsedTim
+                                                            e
+   59 00000110         
+   60 00000110         ; you will need additional globals, but do not change th
+                       e above definitions
+   61 00000110 00 00 00 
+              00       LastTime
+                               SPACE            4
+   62 00000114 00 00 00 
+              00       NStore1 SPACE            4           ;dump
+   63 00000118 00 00 00 
+              00       NStore2 SPACE            4           ;elapsed time
+   64 0000011C 00 00 00 
+              00       Delay   SPACE            4
+   65 00000120         
+   66 00000120         ; ROM Area
+   67 00000120                 EXPORT           Debug_Init
+   68 00000120                 EXPORT           Debug_Dump
+   69 00000120                 EXPORT           Debug_ElapsedTime
+   70 00000120                 EXPORT           Debug_Beat
+   71 00000120         ;-UUU-Import routine(s) from other assembly files (like 
+                       SysTick.s) here
+   72 00000120                 AREA             |.text|, CODE, READONLY, ALIGN=
+2
+   73 00000000                 THUMB
+   74 00000000                 EXPORT           EID1
+   75 00000000 73 72 72 
+              33 32 38 
+              38 00    EID1    DCB              "srr3288",0 ;replace ABC123 wit
+                                                            h your EID
+   76 00000008                 EXPORT           EID2
+   77 00000008 61 76 33 
+              36 37 35 
+              36 00    EID2    DCB              "av36756",0 ;replace ABC123 wit
+                                                            h your EID
+   78 00000010         
+   79 00000010         
+   80 00000010         
+   81 00000010         ;---------------Your code for Lab 4----------------
+   82 00000010         ;Debug initialization for all your debug routines
+   83 00000010         ;This is called once by the Lab4 grader to assign points
+                        (if you pass #2 into TExaS_Init)
+   84 00000010         ;It is later called at the beginning of the main.s
+   85 00000010         ;for options 1 and 3, place 0 into each element of Histo
+
+
+
+ARM Macro Assembler    Page 5 
+
+
+                       gram
+   86 00000010         ; save all registers (not just R4-R11)
+   87 00000010         ; you will need to initialize global variables, Timer2 a
+                       nd Port F here
+   88 00000010         Debug_Init
+   89 00000010         
+   90 00000010 E92D 5FFF       PUSH             {R0-R12,LR}
+   91 00000014         
+   92 00000014         ;Port F and PF2 initialization
+   93 00000014 484E            LDR              R0, =SYSCTL_RCGCGPIO_R
+   94 00000016 6801            LDR              R1, [R0]
+   95 00000018 F041 0120       ORR              R1, #0x20   ;F
+   96 0000001C 6001            STR              R1, [R0]
+   97 0000001E BF00            NOP
+   98 00000020 BF00            NOP
+   99 00000022         
+  100 00000022 484C            LDR              R0, =GPIO_PORTF_DIR_R
+  101 00000024 6801            LDR              R1, [R0]
+  102 00000026 F041 0104       ORR              R1, #0x04   ;PF2
+  103 0000002A 6001            STR              R1, [R0]
+  104 0000002C         
+  105 0000002C 484A            LDR              R0, =GPIO_PORTF_DEN_R
+  106 0000002E 6801            LDR              R1, [R0]
+  107 00000030 F041 0104       ORR              R1, #0x04   ;PF2
+  108 00000034 6001            STR              R1, [R0]
+  109 00000036         
+  110 00000036 F000 F869       BL               Timer2_Init ;TIMER2_TAR_R is 32
+                                                            -bit down counter, 
+                                                            modifies R0-R1
+  111 0000003A         
+  112 0000003A 4848            LDR              R0, =MinimumTime
+  113 0000003C F04F 32FF       LDR              R2, =0xFFFFFFFF
+  114 00000040 6002            STR              R2, [R0]    ;Min = big initial
+  115 00000042 4947            LDR              R1, =MaximumTime
+  116 00000044 F04F 0300       LDR              R3, =0
+  117 00000048 600B            STR              R3, [R1]    ;Max = small initia
+                                                            l
+  118 0000004A 4846            LDR              R0, =LastTime ;set initial last
+                                                             time 0
+  119 0000004C 6003            STR              R3, [R0]
+  120 0000004E 4846            LDR              R0, =Delay
+  121 00000050 F04F 01C8       LDR              R1, =200    ;count
+  122 00000054 6001            STR              R1, [R0]    ;set delay 200
+  123 00000056         
+  124 00000056 F04F 02AE       MOV              R2, #174
+  125 0000005A 4B44            LDR              R3, =NStore1 ;counter dump
+  126 0000005C 601A            STR              R2, [R3]
+  127 0000005E 4C44            LDR              R4, =NStore2 ;counter elapsed_t
+                                                            ime
+  128 00000060 6022            STR              R2, [R4]
+  129 00000062         
+  130 00000062 4C44            LDR              R4, =Histogram ;initialize hist
+                                                            ogram
+  131 00000064 F04F 0500       MOV              R5, #0x00   ;content 
+  132 00000068 F04F 0600       MOV              R6, #0      ;index
+  133 0000006C         sloop
+  134 0000006C 55A5            STRB             R5, [R4, R6]
+  135 0000006E F106 0601       ADD              R6, #1      ;index each 
+  136 00000072 2E40            CMP              R6, #64     ;Histogram size=64
+
+
+
+ARM Macro Assembler    Page 6 
+
+
+  137 00000074 D1FA            BNE              sloop
+  138 00000076         
+  139 00000076 E8BD 9FFF       POP              {R0-R12,PC}
+  140 0000007A         
+  141 0000007A         ; There are four possible options: 0,1,2 or 3
+  142 0000007A         ; Debug_Dump is called after every output.
+  143 0000007A         ; Stop recording and measuring after N observations
+  144 0000007A         ; Don't stop after N calls to Debug_Dump, but stop after
+                        N changes to your data structures
+  145 0000007A         ; (N will be revealed to you in the UART window)
+  146 0000007A         ; Save all registers (not just R4-R11)
+  147 0000007A         
+  148 0000007A         Debug_Dump
+  149 0000007A B53F            PUSH             {R0-R5,LR}
+  150 0000007C         
+  151 0000007C 4B3B            LDR              R3, =NStore1 ;load N counter
+  152 0000007E 681C            LDR              R4, [R3]
+  153 00000080 2C00            CMP              R4, #0      ;check to see if N 
+                                                            is 0, if so dont st
+                                                            ore
+  154 00000082 DD0B            BLE              nodump_N
+  155 00000084         ;examine R0
+  156 00000084 F010 0140       ANDS             R1, R0, #0x40 ;bit 6
+  157 00000088 D108            BNE              nodump_bit6
+  158 0000008A F010 003F       ANDS             R0, R0, #0x3F ;bits 0-5 conside
+                                                            red
+  159 0000008E         
+  160 0000008E 4939            LDR              R1, =Histogram 
+                                                            ;store in histogram
+                                                            
+  161 00000090 5C0A            LDRB             R2, [R1, R0] ;find index, pull 
+                                                            contents
+  162 00000092 F102 0201       ADD              R2, #1      ;add 1 to content
+  163 00000096 540A            STRB             R2, [R1, R0] ;store back
+  164 00000098         
+  165 00000098 1E64            SUBS             R4, R4, #1  ;decrement N counte
+                                                            r
+  166 0000009A 601C            STR              R4, [R3]    ;store counter for 
+                                                            next call
+  167 0000009C         
+  168 0000009C         ;you write this
+  169 0000009C         ;assume capture is called about every 2.5ms (real board)
+                       
+  170 0000009C         ;Let M = number of instructions in your Debug_Dump
+  171 0000009C         ;Calculate T = M instructions * 2cycles/instruction * 12
+                       .5ns/cycle 
+  172 0000009C         ;13 instructions
+  173 0000009C         ;Calculate intrusiveness is T/2.5ms = ???
+  174 0000009C         nodump_bit6
+  175 0000009C         nodump_N
+  176 0000009C BD3F            POP              {R0-R5,PC}
+  177 0000009E         
+  178 0000009E         
+  179 0000009E         
+  180 0000009E         ; Your Debug_ElapsedTime is called after every output.
+  181 0000009E         ; Input: none 
+  182 0000009E         ; Output: none
+  183 0000009E         ; - observe the current time as a 32-bit unsigned intege
+                       r: 
+
+
+
+ARM Macro Assembler    Page 7 
+
+
+  184 0000009E         ;     NowTime = TIMER2_TAR_R
+  185 0000009E         ; - Starting with the second call you will be able to me
+                       asure elapsed time:
+  186 0000009E         ;     calcalate ElapsedTime = LastTime-NowTime (down cou
+                       nter)
+  187 0000009E         ;     determine the Minimum and Maximum ElapsedTime
+  188 0000009E         ; - Set LastTime = NowTime (value needed for next call)
+  189 0000009E         ; - Stop recording after N calls (N revealed to you in t
+                       he UART window)
+  190 0000009E         ; save all registers (not just R4-R11)
+  191 0000009E         Debug_ElapsedTime
+  192 0000009E E92D 4FFF       PUSH             {R0-R11,LR}
+  193 000000A2         
+  194 000000A2 4B33            LDR              R3, =NStore2 ;load N counter
+  195 000000A4 681E            LDR              R6, [R3]
+  196 000000A6 2E00            CMP              R6, #0      ;check to see if N 
+                                                            is 0, if so dont st
+                                                            ore
+  197 000000A8 D01A            BEQ              stoptime_N
+  198 000000AA         
+  199 000000AA 482E            LDR              R0, =LastTime ;fetch lasttime
+  200 000000AC 6805            LDR              R5, [R0]
+  201 000000AE 2D00            CMP              R5, #0
+  202 000000B0 D010            BEQ              jump        ;no LastTime(0) if 
+                                                            first call
+  203 000000B2         
+  204 000000B2 4931            LDR              R1, =TIMER2_TAR_R ;NowTime   ;n
+                                                            ot getting corrent 
+                                                            time
+  205 000000B4 6809            LDR              R1, [R1]    ;contents of NowTim
+                                                            e
+  206 000000B6 EBA5 0201       SUB              R2, R5, R1  ;elapsed time
+  207 000000BA         
+  208 000000BA 4B28            LDR              R3, =MinimumTime ;check if min
+  209 000000BC 681F            LDR              R7, [R3]
+  210 000000BE 42BA            CMP              R2, R7      ;R3=elapsed-min
+  211 000000C0 D305            BLO              ReplaceMin  ;if negative, chang
+                                                            e min
+  212 000000C2         max
+  213 000000C2 4C27            LDR              R4, =MaximumTime ;check if max
+  214 000000C4 F8D4 8000       LDR              R8, [R4]
+  215 000000C8 4542            CMP              R2, R8      ;R4=elapsed-max
+  216 000000CA D802            BHI              ReplaceMax  ;if positive, chang
+                                                            e max
+  217 000000CC E002            B                jump
+  218 000000CE         
+  219 000000CE         ReplaceMin
+  220 000000CE         ;R3 = mintime
+  221 000000CE 601A            STR              R2, [R3]    ;update min
+  222 000000D0 E7F7            B                max
+  223 000000D2         
+  224 000000D2         ReplaceMax
+  225 000000D2         ;R4 = maxtime
+  226 000000D2 6022            STR              R2, [R4]    ;update max
+  227 000000D4         
+  228 000000D4         jump
+  229 000000D4 4928            LDR              R1, =TIMER2_TAR_R ;NowTime
+  230 000000D6 6809            LDR              R1, [R1]
+  231 000000D8 6001            STR              R1, [R0]    ;New LastTime = Now
+
+
+
+ARM Macro Assembler    Page 8 
+
+
+                                                            Time
+  232 000000DA         
+  233 000000DA 1E76            SUBS             R6, R6, #1  ;decrement N counte
+                                                            r
+  234 000000DC 4B24            LDR              R3, =NStore2
+  235 000000DE 601E            STR              R6, [R3]    ;store counter for 
+                                                            next call
+  236 000000E0         stoptime_N
+  237 000000E0         
+  238 000000E0 E8BD 8FFF       POP              {R0-R11,PC}
+  239 000000E4         
+  240 000000E4         
+  241 000000E4         ; Your Debug_Beat function is called every time through 
+                       the main loop to
+  242 000000E4         ; indicate to the operator if the main program is runnin
+                       g (not stuck or dead).
+  243 000000E4         ; Inputs: none
+  244 000000E4         ; Outputs: none
+  245 000000E4         ; However, slow down the flashing so the LED flashes at 
+                       about 1 Hz. 
+  246 000000E4         ; 1Hz means repeating: high for 500ms, low for 500ms
+  247 000000E4         ; Basically, toggle an LED every Mth call to your Debug_
+                       Beat 
+  248 000000E4         ; Find the constant M, so the flashing rate is between 0
+                       .5 and 2 Hz.
+  249 000000E4         ; The Port F pin you need to use will be revealed to you
+                        in the UART window.
+  250 000000E4         ; Save all registers (not AAPCS) 
+  251 000000E4         
+  252 000000E4         Debug_Beat
+  253 000000E4 B507            PUSH             {R0-R2,LR}
+  254 000000E6         
+  255 000000E6 4820            LDR              R0, =Delay
+  256 000000E8 6801            LDR              R1, [R0]
+  257 000000EA 2900            CMP              R1, #0      ;decrement delay co
+                                                            unter
+  258 000000EC D000            BEQ              Toggle      ;if 0, toggle LED
+  259 000000EE E009            B                Count
+  260 000000F0         Toggle
+  261 000000F0 4822            LDR              R0, =GPIO_PORTF_DATA_R
+  262 000000F2 6802            LDR              R2, [R0]
+  263 000000F4 F082 0204       EOR              R2, #0x04   ;toggle
+  264 000000F8 6002            STR              R2, [R0]
+  265 000000FA F04F 00C8       LDR              R0, =200    ;reset counter
+  266 000000FE 491A            LDR              R1, =Delay
+  267 00000100 6008            STR              R0, [R1]    ;store new counter
+  268 00000102 E002            B                jumpcount
+  269 00000104         Count
+  270 00000104 F1A1 0101       SUB              R1, R1, #1
+  271 00000108 6001            STR              R1, [R0]    ;decrement if no to
+                                                            ggle
+  272 0000010A         
+  273 0000010A         jumpcount
+  274 0000010A         
+  275 0000010A BD07            POP              {R0-R2,PC}
+  276 0000010C         
+  277 0000010C         
+  278 0000010C         
+  279 0000010C         ;------------Timer2_Init------------
+
+
+
+ARM Macro Assembler    Page 9 
+
+
+  280 0000010C         ; This subroutine is functional and does not need editin
+                       g
+  281 0000010C         ; Initialize Timer2 running at bus clock.
+  282 0000010C         ; Make it so TIMER2_TAR can be used as a 32-bit time
+  283 0000010C         ; TIMER2_TAR counts down continuously
+  284 0000010C         ; Input: none
+  285 0000010C         ; Output: none
+  286 0000010C         ; Modifies: R0,R1
+  287 0000010C         Timer2_Init
+  288 0000010C 491C            LDR              R1,=SYSCTL_RCGCTIMER_R
+  289 0000010E 6808            LDR              R0,[R1]
+  290 00000110 F040 0004       ORR              R0,R0,#0x04
+  291 00000114 6008            STR              R0,[R1]     ; activate TIMER2
+  292 00000116 BF00            NOP
+  293 00000118 BF00            NOP
+  294 0000011A 491A            LDR              R1,=TIMER2_CTL_R
+  295 0000011C F04F 0000       MOV              R0,#0x00
+  296 00000120 6008            STR              R0,[R1]     ; disable TIMER2A d
+                                                            uring setup
+  297 00000122 4919            LDR              R1,=TIMER2_CFG_R
+  298 00000124 6008            STR              R0,[R1]     ; configure for 32-
+                                                            bit mode
+  299 00000126 4919            LDR              R1,=TIMER2_TAMR_R
+  300 00000128 F04F 0002       MOV              R0,#0x02
+  301 0000012C 6008            STR              R0,[R1]     ; configure for per
+                                                            iodic mode, default
+                                                             down-count setting
+                                                            s
+  302 0000012E 4918            LDR              R1,=TIMER2_TAILR_R
+  303 00000130 F06F 0001       LDR              R0,=0xFFFFFFFE
+  304 00000134 6008            STR              R0,[R1]     ; reload value
+  305 00000136 4917            LDR              R1,=TIMER2_TAPR_R
+  306 00000138 F04F 0000       MOV              R0,#0x00
+  307 0000013C 6008            STR              R0,[R1]     ; no prescale, bus 
+                                                            clock resolution
+  308 0000013E 4916            LDR              R1,=TIMER2_IMR_R
+  309 00000140 F04F 0000       MOV              R0,#0x00
+  310 00000144 6008            STR              R0,[R1]     ; no interrupts
+  311 00000146 490F            LDR              R1,=TIMER2_CTL_R
+  312 00000148 F04F 0001       MOV              R0,#0x01
+  313 0000014C 6008            STR              R0,[R1]     ; enable TIMER2A
+  314 0000014E 4770            BX               LR
+  315 00000150         
+  316 00000150         
+  317 00000150                 ALIGN                        ; make sure the end
+                                                             of this section is
+                                                             aligned
+  318 00000150                 END                          ; end of file
+              400FE608 
+              40025400 
+              4002551C 
+              00000000 
+              00000000 
+              00000000 
+              00000000 
+              00000000 
+              00000000 
+              00000000 
+              40032048 
+
+
+
+ARM Macro Assembler    Page 10 
+
+
+              400253FC 
+              400FE604 
+              4003200C 
+              40032000 
+              40032004 
+              40032028 
+              40032038 
+              40032018 
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4 --apcs=interw
+ork --depend=.\debug.d -o.\debug.o -I.\RTE\_Lab4 -IC:\Users\safin\AppData\Local
+\Arm\Packs\ARM\CMSIS\5.8.0\CMSIS\Core\Include -IC:\Users\safin\AppData\Local\Ar
+m\Packs\Keil\TM4C_DFP\1.1.0\Device\Include\TM4C123 --predefine="__EVAL SETA 1" 
+--predefine="__UVISION_VERSION SETA 536" --predefine="_RTE_ SETA 1" --predefine
+="TM4C123GH6PM SETA 1" --predefine="_RTE_ SETA 1" --list=.\debug.lst Debug.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+DATA 00000000
+
+Symbol: DATA
+   Definitions
+      At line 49 in file Debug.s
+   Uses
+      None
+Comment: DATA unused
+Delay 0000011C
+
+Symbol: Delay
+   Definitions
+      At line 64 in file Debug.s
+   Uses
+      At line 120 in file Debug.s
+      At line 255 in file Debug.s
+      At line 266 in file Debug.s
+
+DumpBuf 00000000
+
+Symbol: DumpBuf
+   Definitions
+      At line 55 in file Debug.s
+   Uses
+      At line 51 in file Debug.s
+Comment: DumpBuf used once
+Histogram 000000C8
+
+Symbol: Histogram
+   Definitions
+      At line 56 in file Debug.s
+   Uses
+      At line 52 in file Debug.s
+      At line 130 in file Debug.s
+      At line 160 in file Debug.s
+
+LastTime 00000110
+
+Symbol: LastTime
+   Definitions
+      At line 61 in file Debug.s
+   Uses
+      At line 118 in file Debug.s
+      At line 199 in file Debug.s
+
+MaximumTime 0000010C
+
+Symbol: MaximumTime
+   Definitions
+      At line 58 in file Debug.s
+   Uses
+      At line 54 in file Debug.s
+      At line 115 in file Debug.s
+      At line 213 in file Debug.s
+
+MinimumTime 00000108
+
+Symbol: MinimumTime
+   Definitions
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Relocatable symbols
+
+      At line 57 in file Debug.s
+   Uses
+      At line 53 in file Debug.s
+      At line 112 in file Debug.s
+      At line 208 in file Debug.s
+
+NStore1 00000114
+
+Symbol: NStore1
+   Definitions
+      At line 62 in file Debug.s
+   Uses
+      At line 125 in file Debug.s
+      At line 151 in file Debug.s
+
+NStore2 00000118
+
+Symbol: NStore2
+   Definitions
+      At line 63 in file Debug.s
+   Uses
+      At line 127 in file Debug.s
+      At line 194 in file Debug.s
+      At line 234 in file Debug.s
+
+9 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 72 in file Debug.s
+   Uses
+      None
+Comment: .text unused
+Count 00000104
+
+Symbol: Count
+   Definitions
+      At line 269 in file Debug.s
+   Uses
+      At line 259 in file Debug.s
+Comment: Count used once
+Debug_Beat 000000E4
+
+Symbol: Debug_Beat
+   Definitions
+      At line 252 in file Debug.s
+   Uses
+      At line 70 in file Debug.s
+Comment: Debug_Beat used once
+Debug_Dump 0000007A
+
+Symbol: Debug_Dump
+   Definitions
+      At line 148 in file Debug.s
+   Uses
+      At line 68 in file Debug.s
+Comment: Debug_Dump used once
+Debug_ElapsedTime 0000009E
+
+Symbol: Debug_ElapsedTime
+   Definitions
+      At line 191 in file Debug.s
+   Uses
+      At line 69 in file Debug.s
+Comment: Debug_ElapsedTime used once
+Debug_Init 00000010
+
+Symbol: Debug_Init
+   Definitions
+      At line 88 in file Debug.s
+   Uses
+      At line 67 in file Debug.s
+Comment: Debug_Init used once
+EID1 00000000
+
+Symbol: EID1
+   Definitions
+      At line 75 in file Debug.s
+   Uses
+      At line 74 in file Debug.s
+Comment: EID1 used once
+EID2 00000008
+
+Symbol: EID2
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Relocatable symbols
+
+   Definitions
+      At line 77 in file Debug.s
+   Uses
+      At line 76 in file Debug.s
+Comment: EID2 used once
+ReplaceMax 000000D2
+
+Symbol: ReplaceMax
+   Definitions
+      At line 224 in file Debug.s
+   Uses
+      At line 216 in file Debug.s
+Comment: ReplaceMax used once
+ReplaceMin 000000CE
+
+Symbol: ReplaceMin
+   Definitions
+      At line 219 in file Debug.s
+   Uses
+      At line 211 in file Debug.s
+Comment: ReplaceMin used once
+Timer2_Init 0000010C
+
+Symbol: Timer2_Init
+   Definitions
+      At line 287 in file Debug.s
+   Uses
+      At line 110 in file Debug.s
+Comment: Timer2_Init used once
+Toggle 000000F0
+
+Symbol: Toggle
+   Definitions
+      At line 260 in file Debug.s
+   Uses
+      At line 258 in file Debug.s
+Comment: Toggle used once
+jump 000000D4
+
+Symbol: jump
+   Definitions
+      At line 228 in file Debug.s
+   Uses
+      At line 202 in file Debug.s
+      At line 217 in file Debug.s
+
+jumpcount 0000010A
+
+Symbol: jumpcount
+   Definitions
+      At line 273 in file Debug.s
+   Uses
+      At line 268 in file Debug.s
+Comment: jumpcount used once
+max 000000C2
+
+Symbol: max
+   Definitions
+      At line 212 in file Debug.s
+
+
+
+ARM Macro Assembler    Page 3 Alphabetic symbol ordering
+Relocatable symbols
+
+   Uses
+      At line 222 in file Debug.s
+Comment: max used once
+nodump_N 0000009C
+
+Symbol: nodump_N
+   Definitions
+      At line 175 in file Debug.s
+   Uses
+      At line 154 in file Debug.s
+Comment: nodump_N used once
+nodump_bit6 0000009C
+
+Symbol: nodump_bit6
+   Definitions
+      At line 174 in file Debug.s
+   Uses
+      At line 157 in file Debug.s
+Comment: nodump_bit6 used once
+sloop 0000006C
+
+Symbol: sloop
+   Definitions
+      At line 133 in file Debug.s
+   Uses
+      At line 137 in file Debug.s
+Comment: sloop used once
+stoptime_N 000000E0
+
+Symbol: stoptime_N
+   Definitions
+      At line 236 in file Debug.s
+   Uses
+      At line 197 in file Debug.s
+Comment: stoptime_N used once
+19 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Absolute symbols
+
+GPIO_PORTF_DATA_R 400253FC
+
+Symbol: GPIO_PORTF_DATA_R
+   Definitions
+      At line 36 in file Debug.s
+   Uses
+      At line 261 in file Debug.s
+Comment: GPIO_PORTF_DATA_R used once
+GPIO_PORTF_DEN_R 4002551C
+
+Symbol: GPIO_PORTF_DEN_R
+   Definitions
+      At line 38 in file Debug.s
+   Uses
+      At line 105 in file Debug.s
+Comment: GPIO_PORTF_DEN_R used once
+GPIO_PORTF_DIR_R 40025400
+
+Symbol: GPIO_PORTF_DIR_R
+   Definitions
+      At line 37 in file Debug.s
+   Uses
+      At line 100 in file Debug.s
+Comment: GPIO_PORTF_DIR_R used once
+SYSCTL_RCGCGPIO_R 400FE608
+
+Symbol: SYSCTL_RCGCGPIO_R
+   Definitions
+      At line 35 in file Debug.s
+   Uses
+      At line 93 in file Debug.s
+Comment: SYSCTL_RCGCGPIO_R used once
+SYSCTL_RCGCTIMER_R 400FE604
+
+Symbol: SYSCTL_RCGCTIMER_R
+   Definitions
+      At line 39 in file Debug.s
+   Uses
+      At line 288 in file Debug.s
+Comment: SYSCTL_RCGCTIMER_R used once
+TIMER2_CFG_R 40032000
+
+Symbol: TIMER2_CFG_R
+   Definitions
+      At line 40 in file Debug.s
+   Uses
+      At line 297 in file Debug.s
+Comment: TIMER2_CFG_R used once
+TIMER2_CTL_R 4003200C
+
+Symbol: TIMER2_CTL_R
+   Definitions
+      At line 42 in file Debug.s
+   Uses
+      At line 294 in file Debug.s
+      At line 311 in file Debug.s
+
+TIMER2_IMR_R 40032018
+
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Absolute symbols
+
+Symbol: TIMER2_IMR_R
+   Definitions
+      At line 43 in file Debug.s
+   Uses
+      At line 308 in file Debug.s
+Comment: TIMER2_IMR_R used once
+TIMER2_TAILR_R 40032028
+
+Symbol: TIMER2_TAILR_R
+   Definitions
+      At line 44 in file Debug.s
+   Uses
+      At line 302 in file Debug.s
+Comment: TIMER2_TAILR_R used once
+TIMER2_TAMR_R 40032004
+
+Symbol: TIMER2_TAMR_R
+   Definitions
+      At line 41 in file Debug.s
+   Uses
+      At line 299 in file Debug.s
+Comment: TIMER2_TAMR_R used once
+TIMER2_TAPR_R 40032038
+
+Symbol: TIMER2_TAPR_R
+   Definitions
+      At line 45 in file Debug.s
+   Uses
+      At line 305 in file Debug.s
+Comment: TIMER2_TAPR_R used once
+TIMER2_TAR_R 40032048
+
+Symbol: TIMER2_TAR_R
+   Definitions
+      At line 46 in file Debug.s
+   Uses
+      At line 204 in file Debug.s
+      At line 229 in file Debug.s
+
+12 symbols
+376 symbols in table

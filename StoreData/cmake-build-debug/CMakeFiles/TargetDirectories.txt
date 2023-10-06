@@ -1,0 +1,3 @@
+C:/Users/safin/Documents/_SCHOOL/_F22/ECE 312/PA7/cmake-build-debug/CMakeFiles/PA7.dir
+C:/Users/safin/Documents/_SCHOOL/_F22/ECE 312/PA7/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/safin/Documents/_SCHOOL/_F22/ECE 312/PA7/cmake-build-debug/CMakeFiles/rebuild_cache.dir

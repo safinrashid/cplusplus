@@ -1,0 +1,11 @@
+text "Test\n"
+var hello 1
+var hello 2
+text "whoops!\n"
+set hi hello
+text "ouch, my bad\n"
+set hello + hi 2
+set hi hello
+text "well, at least I found out 2 + 2 is "
+output hi
+text \n

@@ -1,0 +1,23 @@
+Inventory Books 1000
+Purchase Suzy Books 15
+Purchase John Books 10
+Purchase JOHN Books 10
+Purchase john Books 10
+Purchase JOhn Books 10
+Purchase JoHn Books 10
+Purchase joHN Books 10
+
+Summarize
+Quit
+/** test4 Results should be: **/
+There are 925 Books 0 Dice 0 Figures and 0 Towers in inventory
+we have had a total of 7 different customers
+Suzy has purchased the most Books (15)
+no one has purchased any Dice
+no one has purchased any Figures
+no one has purchased any Towers
+/********* end of test 4 *************/
+
+
+
+
